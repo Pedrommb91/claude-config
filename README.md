@@ -13,6 +13,15 @@ and a whitelist `.gitignore` tracks only the stable parts:
 Everything else (sessions, `worklog.config.json`, projects/memory, caches, telemetry, plugins,
 credentials, `skills/synced`, `skills/.trash`) is ignored.
 
+## Commit identity
+
+This repo is public. `.githooks/pre-push` rejects pushes containing commits whose author or committer
+email is not a GitHub noreply address. Enable it once per clone:
+
+```sh
+git -C ~/.claude config core.hooksPath .githooks
+```
+
 ## Credits
 
 The following skills are not mine; they come from
@@ -26,6 +35,17 @@ The following skills are not mine; they come from
 
 All credit for them goes to the original author; check the upstream repo for
 the current versions and license terms.
+
+## Paparazzi setup (per machine)
+
+The `paparazzi` skill (live agent map, `/paparazzi`) lives in its own repo, [Pedrommb91/paparazzi](https://github.com/Pedrommb91/paparazzi).
+`skills/paparazzi` is a git-ignored symlink to a local checkout. To clone it (or update it) and link it:
+
+```sh
+~/.claude/scripts/install-paparazzi.sh             # checkout defaults to ~/Documents/personal/paparazzi
+PAPARAZZI_DIR=~/src/paparazzi ~/.claude/scripts/install-paparazzi.sh
+~/.claude/scripts/install-paparazzi.sh uninstall   # removes the link, keeps the checkout
+```
 
 ## Worklog setup (per machine)
 
