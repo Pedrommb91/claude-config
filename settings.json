@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
+  "permissions": {
+    "allow": [
+      "Bash(go build:*)",
+      "Bash(go vet:*)",
+      "Bash(go test:*)",
+      "Bash(go fmt:*)",
+      "Bash(go mod tidy)",
+      "Bash(pytest:*)",
+      "Bash(ruff check:*)",
+      "Bash(ruff format:*)",
+      "Bash(terraform fmt:*)",
+      "Bash(terraform validate:*)",
+      "Bash(terraform plan:*)",
+      "Bash(kubectl get:*)",
+      "Bash(kubectl describe:*)",
+      "Bash(kubectl diff:*)",
+      "Bash(kubectl logs:*)",
+      "Bash(kubectl config current-context)",
+      "Bash(helm template:*)",
+      "Bash(helm lint:*)",
+      "Bash(aws sts get-caller-identity)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)",
+      "mcp__notion__notion-search",
+      "mcp__notion__notion-fetch",
+      "mcp__notion__notion-query-data-sources"
+    ],
+    "deny": [
+      "Bash(terraform destroy:*)",
+      "Bash(kubectl get secret:*)",
+      "Bash(kubectl get secrets:*)",
+      "Bash(kubectl describe secret:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(~/.aws/**)",
+      "Read(~/.kube/**)",
+      "Read(**/*.tfstate)",
+      "Read(**/*.tfstate.backup)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/secrets/**)"
+    ],
+    "ask": [
+      "Bash(terraform apply:*)",
+      "Bash(terraform import:*)",
+      "Bash(terraform state:*)",
+      "Bash(kubectl apply:*)",
+      "Bash(kubectl delete:*)",
+      "Bash(kubectl patch:*)",
+      "Bash(kubectl scale:*)",
+      "Bash(kubectl rollout:*)",
+      "Bash(kubectl exec:*)",
+      "Bash(helm install:*)",
+      "Bash(helm upgrade:*)",
+      "Bash(helm uninstall:*)",
+      "Bash(git push:*)",
+      "Bash(git commit:*)",
+      "mcp__notion__notion-create-pages",
+      "mcp__notion__notion-update-page"
+    ]
+  },
+  "model": "sonnet",
+  "modelSettings": {
+    "claude-opus-5-5": {
+      "effortLevel": "medium"
+    }
+  }
+}

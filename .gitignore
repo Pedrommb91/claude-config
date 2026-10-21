@@ -1,0 +1,24 @@
+# Whitelist: ignore everything, then re-include only config and skills.
+*
+
+!.gitignore
+!README.md
+!CLAUDE.md
+!settings.json
+!agents/
+!agents/**
+!skills/
+!skills/**
+
+# Inside skills/: managed or mutable content
+skills/synced/
+skills/.trash/
+
+# Safety net: never track secrets, local overrides or caches even under whitelisted paths
+settings.local.json
+worklog.config.json
+.credentials*
+.env*
+__pycache__/
+*.pyc
+.DS_Store

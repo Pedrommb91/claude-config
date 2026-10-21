@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Map</title>
+<style>
+  :root { --bg:#0f1218; --panel:#171c26; --line:#3a4458; --fg:#e6e9ef; --dim:#8a93a6;
+          --run:#3ddc84; --idle:#f5b942; --done:#5b8def; --root:#c792ea; --task:#4fd1c5; }
+  @media (prefers-color-scheme: light) {
+    :root { --bg:#f5f6f9; --panel:#fff; --line:#c5cbd8; --fg:#1b2030; --dim:#667088;
+            --run:#12a150; --idle:#c98a0a; --done:#2f62d1; --root:#8e44ad; --task:#0f8f84; }
+  }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.4 system-ui,sans-serif }
+  header { display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; padding:12px 16px; border-bottom:1px solid var(--line) }
+  h1 { font-size:16px; margin:0 }
+  .stat { color:var(--dim) } .stat b { color:var(--fg) }
+  .dot { display:inline-block; flex:none; width:9px; height:9px; border-radius:50%; background:var(--dim) }
+  .dot.running, .dot.busy { background:var(--run); animation:pulse 1.2s infinite }
+  .dot.idle, .dot.unknown { background:var(--idle) } .dot.done, .dot.completed { background:var(--done) }
+  .dot.failed, .dot.killed { background:#e5534b }
+  @keyframes pulse { 50% { opacity:.3 } }
+  main { padding:16px; display:grid; gap:16px }
+  .session { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px 14px; overflow:hidden }
+  .shead { color:var(--dim); font-size:12px; margin-bottom:8px }
+  .shead b { color:var(--fg); font-size:13px }
+  a { color:var(--done) }
+
+  /* tree with connector lines */
+  ul.tree, ul.tree ul { list-style:none; margin:0; padding:0 }
+  ul.tree ul { margin-left:14px; padding-left:18px; border-left:2px solid var(--line) }
+  ul.tree ul > li { position:relative }
+  ul.tree ul > li::before { content:""; position:absolute; left:-18px; top:20px; width:16px; border-top:2px solid var(--line) }
+  ul.tree ul > li:last-child::after { content:""; position:absolute; left:-20px; top:22px; bottom:0; width:4px; background:var(--panel) }
+
+  .node { margin:6px 0; padding:8px 10px; border:1px solid var(--line); border-radius:8px; border-left:4px solid var(--dim); background:var(--bg); min-width:0 }
+  .node.running, .node.busy { border-left-color:var(--run) } .node.idle { border-left-color:var(--idle) } .node.done { border-left-color:var(--done) }
+  .node.root { border-left-color:var(--root) }
+  .node.task { border-left-color:var(--task); padding:6px 10px }
+  .top { display:flex; gap:8px; align-items:center; flex-wrap:wrap }
+  .name { font-weight:600; overflow-wrap:anywhere }
+  .kind { font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--dim); border:1px solid var(--line); border-radius:4px; padding:0 5px }
+  .root .kind { color:var(--root); border-color:var(--root) } .task .kind { color:var(--task); border-color:var(--task) }
+  .meta { color:var(--dim); font-size:12px }
+  .goal { margin-top:6px; font-size:13px } .goal b { color:var(--root) }
+  .tool { font:12px ui-monospace,monospace; color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:3px }
+  details { margin-top:4px } summary { cursor:pointer; color:var(--dim); font-size:12px }
+  details pre { white-space:pre-wrap; font:12px ui-monospace,monospace; color:var(--dim); margin:4px 0 0; max-height:180px; overflow:auto }
+  .empty { color:var(--dim); padding:40px; text-align:center }
+  #err { color:#e5534b; display:none }
+</style>
+</head>
+<body>
+<header>
+  <h1>Agent Map</h1>
+  <span class="stat"><b id="nSess">0</b> live sessions</span>
+  <span class="stat"><span class="dot running"></span> <b id="nRun">0</b> agents running</span>
+  <span class="stat"><span class="dot" style="background:var(--task)"></span> <b id="nTask">0</b> bg tasks</span>
+  <label class="stat"><input type="checkbox" id="showAll"> show finished / stopped</label>
+  <span class="stat" id="upd"></span><span id="err">server unreachable</span>
+</header>
+<main id="root"><div class="empty">Loading…</div></main>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const dur = s => { s = Math.max(0, Math.floor(s)); return s < 60 ? s + "s" : s < 3600 ? Math.floor(s/60) + "m " + (s%60) + "s" : Math.floor(s/3600) + "h " + Math.floor(s%3600/60) + "m"; };
+const tok = n => n >= 1000 ? (n/1000).toFixed(1) + "k" : String(n);
+const model = m => esc((m || "").replace(/^claude-/, ""));
+const showAll = $("showAll");
+const open = new Set();  // keep <details> open across refreshes
+try { showAll.checked = localStorage.getItem("showAll") === "1"; } catch {}
+showAll.onchange = () => { try { localStorage.setItem("showAll", showAll.checked ? "1" : "0"); } catch {} render(); };
+document.addEventListener("toggle", e => { const k = e.target.dataset.k; if (k) e.target.open ? open.add(k) : open.delete(k); }, true);
+let data = null;
+
+const li = (inner, kids) => `<li>${inner}${kids.length ? `<ul>${kids.join("")}</ul>` : ""}</li>`;
+
+function taskNode(t) {
+  return li(`<div class="node task"><div class="top"><span class="dot ${esc(t.status)}"></span><span class="kind">bg task</span>
+    <span class="name">${esc(t.label)}</span><span class="meta">${esc(t.status)}</span></div></div>`, []);
+}
+
+function agentNode(a, kids, now) {
+  const end = a.status === "running" ? now : a.updated;
+  return li(`<div class="node ${a.status}">
+    <div class="top"><span class="dot ${a.status}"></span><span class="kind">${esc(a.type)}</span>
+      <span class="name">${esc(a.description || a.id)}</span></div>
+    <div class="meta">${esc(a.status)} · ${dur(end - a.started)} · ${tok(a.tokens)} tokens · ${a.toolCalls} tool calls · ${model(a.model)}${a.background ? " · background" : ""}</div>
+    ${a.lastTool && a.status !== "done" ? `<div class="tool">▸ ${esc(a.lastTool)}</div>` : ""}
+    ${a.status === "done" && a.lastText ? `<div class="meta">✓ ${esc(a.lastText)}</div>` : ""}
+    ${a.prompt ? `<details data-k="p-${a.id}" ${open.has("p-" + a.id) ? "open" : ""}><summary>spawned with prompt</summary><pre>${esc(a.prompt)}</pre></details>` : ""}
+  </div>`, kids);
+}
+
+function render() {
+  if (!data) return;
+  let nRun = 0, nTask = 0, html = "";
+  for (const s of data.sessions) {
+    const visible = a => showAll.checked || a.status === "running";
+    const tasksOf = owner => s.tasks.filter(t => t.owner === owner && (showAll.checked || t.status === "running"));
+    const childrenOf = parent => s.agents.filter(a => a.parent === parent);
+    const build = a => {
+      const kids = [...childrenOf(a.id).map(build), ...tasksOf(a.id).map(taskNode)].filter(Boolean);
+      if (!visible(a) && !kids.length) return "";
+      return agentNode(a, kids, data.now);
+    };
+    s.agents.forEach(a => { if (a.status === "running") nRun++; });
+    s.tasks.forEach(t => { if (t.status === "running") nTask++; });
+
+    const kids = [...childrenOf("main").map(build), ...tasksOf("main").map(taskNode)].filter(Boolean);
+    const g = s.goal;
+    const prs = s.prs.map(p => `<a href="${esc(p.url)}" target="_blank" rel="noreferrer">#${p.number}</a>`).join(" ");
+    const root = `<div class="node root">
+      <div class="top"><span class="dot ${s.status}"></span><span class="kind">main chat</span>
+        <span class="name">${esc(s.name || s.id.slice(0, 8))}</span></div>
+      <div class="meta">${esc(s.status)} · ${dur(data.now - s.started)} · ${tok(s.tokens)} tokens in context · ${model(s.model)}</div>
+      ${g ? `<div class="goal"><b>/goal ${g.met ? "✓ met" : "active"}</b> ${esc(g.condition)}</div>` : ""}
+      ${s.status === "busy" && s.lastTool ? `<div class="tool">▸ ${esc(s.lastTool)}</div>` : ""}
+    </div>`;
+    html += `<section class="session">
+      <div class="shead"><b>${esc(s.project)}</b>${s.branch ? " · ⎇ " + esc(s.branch) : ""}${prs ? " · PRs " + prs : ""}</div>
+      <ul class="tree">${li(root, kids)}</ul></section>`;
+  }
+  $("nSess").textContent = data.sessions.length; $("nRun").textContent = nRun; $("nTask").textContent = nTask;
+  $("root").innerHTML = html || '<div class="empty">No live Claude sessions.</div>';
+}
+
+async function tick() {
+  try {
+    data = await (await fetch("/api/agents", {cache:"no-store"})).json();
+    $("err").style.display = "none";
+    $("upd").textContent = "updated " + new Date().toLocaleTimeString();
+    render();
+  } catch { $("err").style.display = "inline"; }
+}
+tick(); setInterval(tick, 2000);
+</script>
+</body>
+</html>
