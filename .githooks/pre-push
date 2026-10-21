@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Reject pushes containing commits whose author or committer email is not a
+# GitHub noreply address. This repo is public; personal/work emails must not leak.
+# Enable with: git config core.hooksPath .githooks
+set -euo pipefail
+
+allowed='^(([0-9]+\+)?[A-Za-z0-9-]+@users\.noreply\.github\.com|noreply@github\.com)$'
+zero=0000000000000000000000000000000000000000
+bad=""
+
+while read -r _local_ref local_sha _remote_ref _remote_sha; do
+  [[ "$local_sha" == "$zero" ]] && continue  # branch deletion
+  while read -r sha ae ce; do
+    [[ "$ae" =~ $allowed && "$ce" =~ $allowed ]] || bad+="  ${sha:0:7} author=$ae committer=$ce"$'\n'
+  done < <(git rev-list --format='%H %ae %ce' --no-commit-header "$local_sha" --not --remotes)
+done
+
+if [[ -n "$bad" ]]; then
+  echo "pre-push: refusing to push commits with non-noreply emails:" >&2
+  printf '%s' "$bad" >&2
+  echo "Fix the identity (git config user.email <id>+<user>@users.noreply.github.com) and amend." >&2
+  exit 1
+fi
