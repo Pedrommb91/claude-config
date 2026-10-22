@@ -29,9 +29,10 @@
       "Bash(git diff:*)",
       "Bash(git log:*)",
       "Bash(git branch:*)",
-      "mcp__notion__notion-search",
-      "mcp__notion__notion-fetch",
-      "mcp__notion__notion-query-data-sources"
+      "Bash(python3 ~/.claude/skills/worklog/scripts/vault.py:*)",
+      "Read(/Users/pedrobarreiro/Documents/Workbench/**)",
+      "Edit(/Users/pedrobarreiro/Documents/Workbench/**)",
+      "Write(/Users/pedrobarreiro/Documents/Workbench/**)"
     ],
     "deny": [
       "Bash(terraform destroy:*)",
@@ -64,9 +65,7 @@
       "Bash(helm upgrade:*)",
       "Bash(helm uninstall:*)",
       "Bash(git push:*)",
-      "Bash(git commit:*)",
-      "mcp__notion__notion-create-pages",
-      "mcp__notion__notion-update-page"
+      "Bash(git commit:*)"
     ]
   },
   "model": "sonnet",
