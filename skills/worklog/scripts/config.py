@@ -33,6 +33,10 @@ FIELDS: dict[str, tuple[str, str]] = {
         "Folders that contain your git repos, comma-separated (used by /worklog backfill):",
         "",
     ),
+    "vault_path": (
+        "Obsidian vault folder that holds the Worklog/ notes (e.g. ~/Documents/Workbench):",
+        "",
+    ),
 }
 
 
