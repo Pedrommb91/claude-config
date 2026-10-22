@@ -1,9 +1,10 @@
-# Ticket page template
+# Ticket note template
 
-Page title = ticket title only (e.g. `Migrate deploy workflow to OIDC`); the `Ticket ID`
-property holds `PROJ-123`. The display label `[PROJ-123] <title>` is built from both.
+The frontmatter `title` is the ticket title only (e.g. `Migrate deploy workflow to OIDC`); the
+`ticket_id` field holds `PROJ-123`. The display label `[PROJ-123] <title>` is built from both.
+This is the note body, below the frontmatter (see `Worklog/_schema.md` in the vault).
 
-## New page body (create once)
+## New note body (create once)
 
 ```markdown
 ## Goal / Why

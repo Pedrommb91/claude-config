@@ -1,15 +1,15 @@
 ---
 name: start-ticket
-description: Start work on a new Jira ticket. Jira isn't connected, so ask the user for the ticket details (ID, title, description, type) in native macOS form dialogs, build the Jira link from the ID, then create the ticket page in the Notion work log, create the git branch, and propose an implementation plan. Use this whenever the user runs /start-ticket, says "start a ticket", "start PROJ-123", "new ticket", "I'm picking up a ticket", or pastes a Jira ticket and wants to begin work on it.
+description: Start work on a new Jira ticket. Jira isn't connected, so ask the user for the ticket details (ID, title, description, type) in native macOS form dialogs, build the Jira link from the ID, then create the ticket note in the Obsidian work log (Workbench vault), create the git branch, and propose an implementation plan. Use this whenever the user runs /start-ticket, says "start a ticket", "start PROJ-123", "new ticket", "I'm picking up a ticket", or pastes a Jira ticket and wants to begin work on it.
 ---
 
-# Start ticket: Jira ticket → Notion page + branch + plan
+# Start ticket: Jira ticket → vault note + branch + plan
 
 Jira can't be connected, so everything about the ticket comes from the user. Collect it
 once, then set up the work so `/worklog` and `/weeklog` find the ticket later.
-Notion databases, the project registry, the ticket page template and the sanitizing rules
-are the same as in the `worklog` skill (`~/.claude/skills/worklog/SKILL.md` and
-`~/.claude/skills/worklog/references/page-template.md`). Read both before step 3.
+The vault layout, `vault.py`, the project registry, the ticket note template and the
+sanitizing rules are the same as in the `worklog` skill (`~/.claude/skills/worklog/SKILL.md`
+and `~/.claude/skills/worklog/references/page-template.md`). Read both before step 3.
 
 ## 1. Ask for the ticket (form dialogs)
 
@@ -49,18 +49,19 @@ Then validate:
 
 ## 3. Resolve the project and check for an existing ticket
 
-- Resolve the project from the repo ID exactly as worklog step 2 says (registry lookup in
-  Worklog Projects; ask if there are no matches or several). Check that the ID prefix matches
-  the project's `Ticket prefix`.
-- Query Worklog Tickets for this `Ticket ID` within the project. If it exists, don't create a
-  duplicate. Say so, show its status and last session, and offer to update its fields
-  (description, links) and continue with the branch and plan steps.
+- Resolve the project from the repo ID exactly as worklog step 2 says (`vault.py find-project
+  --repo <repo-id>`; ask if there are no matches or several). Check that the ID prefix matches
+  the project's `ticket_prefix`.
+- `vault.py find-ticket --project <P> --id <ID>`. If it exists, don't create a duplicate. Say
+  so, show its `status` and `last_session`, and offer to update its fields (description,
+  links) and continue with the branch and plan steps.
 
 ## 4. Preview and confirm (one confirmation)
 
 Show everything that will be created:
-- **Notion:** project → `[PROJ-123] <title>` (new / existing), Type, Status = In progress,
-  Links, and the page body (below).
+- **Vault note:** project → `[PROJ-123] <title>` (new / existing), the file
+  `Tickets/<Project>/<key> - <title>.md`, `ticket_type`, `status: In progress`, `links`, and
+  the note body (below).
 - **Branch:** `<type>/<ID>-<slug>` off `origin/<default>`. Type prefix: `feat` for Feature,
   `fix` for Bug, `chore` for Chore, `docs`/`ci`/`refactor` if the ticket is clearly that.
   Slug: 3–5 lowercase words from the title, hyphenated, ≤ 40 chars. Follow the repo's
@@ -70,11 +71,14 @@ Show everything that will be created:
 
 Write nothing until the user confirms. Apply their edits.
 
-## 5. Create the Notion ticket page
+## 5. Create the ticket note
 
-Properties: `Name` = title, `Ticket ID`, `Key` = ID lowercased, `Project`, `Status` = In
-progress, `Type`, `Repos` = repo ID, `Branch`, `Links` = Jira link first, then other links
-one per line. Don't set `Last session`, because no work has been logged yet.
+Write `<vault_path>/Worklog/Tickets/<Project>/<key> - <title>.md` (file-name rules in the
+`worklog` skill; the title stays verbatim in the frontmatter). Frontmatter, in this order,
+following `Worklog/_schema.md`: `type: ticket`, `title` = title, `ticket_id`, `key` = ID
+lowercased, `project: "[[<Project>]]"`, `status: In progress`, `ticket_type`, `repos` = repo ID,
+`branch`, `links` = Jira link first, then other links. Don't set `last_session`, because no
+work has been logged yet. Quote strings that contain `:`, `[` or `#`.
 
 Body: the worklog template, with the Jira description added after Goal / Why:
 
@@ -114,12 +118,12 @@ trade-offs, how it will be verified (the checks from the global CLAUDE.md), and 
 for the ticket owner. Follow the user's working style: present the plan and **wait for
 approval** before changing code.
 
-End with: the Notion page link, the branch name, and the plan.
+End with: the ticket note path, the branch name, and the plan.
 
 ## Edge cases
-- **Not in a git repo:** create the Notion page only. Ask which repo/project it belongs to.
-- **Notion unavailable:** tell the user to authenticate via `/mcp`. Save the ticket details
-  and page body to `./.worklog-pending.md` (gitignored) so `/worklog` can create the page later.
-  Still create the branch and plan.
-- **Ticket spans several repos:** create the page once. Branches are created per repo when
-  work starts there; worklog adds each repo to `Repos`.
+- **Not in a git repo:** create the ticket note only. Ask which repo/project it belongs to.
+- **Vault missing or `vault_path` unset:** `vault.py` says so. Tell the user to run
+  `setup.py` and stop before writing anything; the branch and plan can still go ahead if they
+  want them.
+- **Ticket spans several repos:** create the note once. Branches are created per repo when
+  work starts there; worklog adds each repo to `repos`.
