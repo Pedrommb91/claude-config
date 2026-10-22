@@ -1,12 +1,12 @@
 ---
 name: worklog
-description: Record what the user worked on and WHY into their Notion work log, one page per ticket (work item) grouped by project, appending a dated session entry each time and recording a daily session row used for the weekly time-tracking summary. Use this whenever the user runs /worklog, asks to "log this", "record this in Notion", "update my work log", "document what we did", or accepts an end-of-task offer to log work. Also use it to backfill days the user forgot to log ("/worklog backfill", "I forgot to log Tuesday", "fill in the missing days", or when /weeklog offers it). Also use it when the user asks what they did on a ticket or project previously, since the log is the source of truth.
+description: Record what the user worked on and WHY into their Obsidian work log (the Workbench vault), one note per ticket (work item) grouped by project, appending a dated session entry each time and recording a daily session note used for the weekly time-tracking summary. Use this whenever the user runs /worklog, asks to "log this", "record this in the worklog", "update my work log", "document what we did", or accepts an end-of-task offer to log work. Also use it to backfill days the user forgot to log ("/worklog backfill", "I forgot to log Tuesday", "fill in the missing days", or when /weeklog offers it). Also use it when the user asks what they did on a ticket or project previously, since the log is the source of truth.
 ---
 
-# Worklog: project/ticket journal in Notion
+# Worklog: project/ticket journal in the vault
 
-Each ticket is one Notion page with a narrative session log (what/why/decisions).
-Each day of work on a ticket is also one row in **Worklog Sessions**, which powers the
+Each ticket is one Markdown note with a narrative session log (what/why/decisions).
+Each day of work on a ticket is also one small note in `Worklog/Sessions/`, which powers the
 weekly by-day summary (`/weeklog`) used for time-tracking entries.
 The goal is a durable record of decisions and reasoning ("why"), not a commit log.
 
@@ -16,32 +16,47 @@ Before backfill mode (and in `weeklog` / `start-ticket`) run
 `python3 ~/.claude/skills/worklog/scripts/setup.py --get`; on exit code 3 run
 `python3 ~/.claude/skills/worklog/scripts/setup.py` (dialogs; long timeout) or ask in chat and
 use `setup.py --set key=value`. Keys: `ticket_url_base`, `daily_ticket_id`, `daily_title`,
-`daily_project`, `time_tool`, `repos_roots`.
+`daily_project`, `time_tool`, `repos_roots`, `vault_path`.
 
-## Notion structure
+## Vault structure
 
-Four databases in the user's Notion (via the Notion MCP server):
+The vault is the folder in `vault_path`; the worklog lives in its `Worklog/` subfolder. The
+contract (field names, file naming, wikilinks, select values) is `Worklog/_schema.md` in the
+vault: read it before writing a note by hand. In short:
 
-- **Worklog Projects**: `Name` (title), `Repos` (text: one `owner/repo` per line, the repo →
-  project registry), `Ticket prefix` (text, e.g. `PROJ`; empty if the project has no ticket
-  IDs), `Status` (select: Active / Paused / Done), `Description` (text)
-- **Worklog Tickets**: `Name` (title: the ticket title only, without the ID),
-  `Ticket ID` (text, e.g. `PROJ-123`; empty if the project has no prefix), `Key` (text, unique
-  slug), `Project` (relation → Worklog Projects), `Status` (select: In progress / Blocked /
-  Done), `Type` (select: Feature / Bug / Incident / Chore / Research), `Repos` (text: repo IDs
-  touched, one per line), `Branch` (text), `Links` (text, PRs/docs), `Last session` (date)
-- **Worklog Sessions**: `Name` (title: the display label, see below), `Date` (date),
-  `Ticket` (relation → Worklog Tickets), `Project` (relation → Worklog Projects),
-  `Summary` (text: one line, timesheet-ready)
-- **Worklog Weeks**: written by the `weeklog` skill, not this one.
+- `Projects/<Project>.md`: `repos` (list of `owner/repo`, the repo → project registry),
+  `ticket_prefix` (empty if the project has no ticket IDs), `status` (Active / Paused / Done),
+  `description`
+- `Tickets/<Project>/<key> - <title>.md`: `title` (ticket title only, without the ID),
+  `ticket_id` (e.g. `PROJ-123`; omitted if the project has no prefix), `key` (unique slug),
+  `project` (`"[[Project]]"`), `status` (In progress / Blocked / Done), `ticket_type`
+  (Feature / Bug / Incident / Chore / Research), `repos`, `branch`, `links` (list),
+  `last_session` (date). The body is the page template.
+- `Sessions/<YYYY-MM-DD> <key>.md`: `date`, `ticket`, `project`, `summary` (one line,
+  timesheet-ready, 120 characters at most). Written only through `vault.py upsert-session`.
+- `Weeks/<YYYY-Www>.md`: written by the `weeklog` skill, not this one.
 
-**Display label** for a ticket, used everywhere (session rows, weekly summary):
+**Display label** for a ticket, used everywhere (session notes, weekly summary), built from
+the ticket's frontmatter, never from the file name:
 - With a Ticket ID: `[PROJ-123] <ticket title>`
 - Without one: `<ticket title>`
 
-Find the databases by searching Notion for their names. If they don't exist, stop and
-tell the user; offer to create them with the schema above (only after they agree).
-For the ticket page body layout, read `references/page-template.md`.
+**Lookups and session writes go through `vault.py`** (JSON on stdout, vault taken from
+`vault_path`; `python3 ~/.claude/skills/worklog/scripts/vault.py --help`):
+- `find-project --repo owner/repo`
+- `find-ticket --project NAME (--id PROJ-1 | --key proj-1)` (ID first, then key) and
+  `list-tickets --project NAME [--status "In progress"]`
+- `sessions --from DATE --to DATE`
+- `upsert-session --project NAME (--id | --key) --date DATE --summary TEXT`
+- `find-week (--week 2026-W40 | --date DATE)`
+
+Everything else (ticket and project notes) is edited with Read/Edit/Write. If `vault.py` says
+the vault is missing, tell the user to run `setup.py` (`vault_path`); don't create it.
+For the ticket note body layout, read `references/page-template.md`.
+
+**File names** drop `[ ] # ^ | \ / :`, collapse repeated spaces and stop at 100 characters on
+a word boundary. Frontmatter strings that contain `:`, `[`, `#`, quotes or look like
+`yes`/`no`/numbers are double-quoted (JSON style).
 
 ## Workflow
 
@@ -59,26 +74,27 @@ Run these, tolerating failures (e.g. not a git repo):
 Then review this conversation: what was asked, what changed, what was decided and why.
 
 ### 2. Resolve the project
-Projects span multiple repos, and new projects appear often. The **`Repos` property in
-Worklog Projects is the single source of truth** for which repo belongs to which project.
+Projects span multiple repos, and new projects appear often. The **`repos` list in
+the project notes is the single source of truth** for which repo belongs to which project.
 Never infer the project from the repo name alone.
 
 1. **Explicit override:** if the user named a project in this request, use it.
    Otherwise, if the repo's CLAUDE.md or CLAUDE.local.md has `Worklog project: <name>`, use it.
-2. **Registry lookup:** query Worklog Projects for pages whose `Repos` contains the repo ID
-   (match whole lines, case-insensitive, so `acme/infra` doesn't match `acme/infra-modules`).
+2. **Registry lookup:** `vault.py find-project --repo <repo-id>` (whole entries,
+   case-insensitive, so `acme/infra` doesn't match `acme/infra-modules`).
    - **Exactly one match:** use it. Mention it in the preview ("Project: EKS Platform").
    - **Several matches** (shared repo, e.g. a modules repo): ask which project this ticket
      belongs to. Don't save a default; ask each time for a new ticket. For an existing
      ticket found in step 3, use that ticket's project.
    - **No match** (new repo or new project): list the Active projects and ask:
      *"`<repo-id>` isn't mapped yet. Which project is it part of, or is it a new project?"*
-     - Existing project: append the repo ID as a new line to that project's `Repos`.
+     - Existing project: add the repo ID as a new item to that project note's `repos` list.
      - New project: ask for a name, a one-line description, and its ticket prefix
-       (e.g. `PROJ`, or none), then create the project page (Status = Active, Repos = repo ID).
+       (e.g. `PROJ`, or none), then create `Projects/<Name>.md` (`type: project`,
+       `status: Active`, `repos` = repo ID, empty body).
      State the mapping change in the preview so the user confirms it with the entry.
      After this, the repo is never asked about again, on any machine.
-3. Never create a project or change `Repos` without the user's confirmation.
+3. Never create a project or change `repos` without the user's confirmation.
 
 ### 3. Resolve the ticket
 **Ticket ID** (only if the project has a `Ticket prefix`):
@@ -93,15 +109,20 @@ slug from a /worklog argument or the branch name with prefixes stripped (`feat/`
 `chore/`, `hotfix/`, `<user>/`). On `main`/`master`/`develop` or a generic branch, ask for
 a key and title, suggesting one based on the work.
 
-**Lookup**, within the project (not the repo): match by `Ticket ID` first, then by `Key`.
-A ticket can span several repos of the same project, and sessions from any of them append
-to the same page. If there's no match, list the project's In progress tickets and ask
-whether this work continues one of them before creating a new page.
-- **Found:** fetch the page so the new entry doesn't repeat earlier ones.
+**Lookup**, within the project (not the repo): `vault.py find-ticket --project <P> --id <ID>
+--key <key>` matches the ticket ID first, then the key. A ticket can span several repos of
+the same project, and sessions from any of them append to the same note. If there's no
+match, `vault.py list-tickets --project <P> --status "In progress"` and ask whether this
+work continues one of them before creating a new note. Duplicates make `vault.py` fail:
+list them and ask which one to use.
+- **Found:** Read the ticket note (its `path`) so the new entry doesn't repeat earlier ones.
 - **Not found:** ask for the ticket title if it isn't clear (for IDs, use the real ticket's
-  title as the user gives it, not a paraphrase). Create the page (Name = title, Ticket ID,
-  Key, Project, Status = In progress, Type inferred and stated in the preview, Branch) with
-  the body skeleton from the template, including a **Goal / Why** section.
+  title as the user gives it, not a paraphrase). Create
+  `Tickets/<Project>/<key> - <title>.md` with Write: frontmatter in schema order (`type:
+  ticket`, `title`, `ticket_id`, `key`, `project`, `status: In progress`, `ticket_type`
+  inferred and stated in the preview, `repos`, `branch`, `links`; no `last_session` yet,
+  `upsert-session` sets it) and the body skeleton from the template, including a
+  **Goal / Why** section.
 
 ### 4. Draft the session entry and session summary
 Use the entry format in `references/page-template.md`. Rules:
@@ -117,6 +138,7 @@ timesheet reader (manager/client), no file paths or jargon beyond what's needed.
 Example: `Replaced static AWS keys with OIDC in staging deploy; scoped IAM role to main branch`.
 
 ### 5. Sanitize (always)
+The vault is a git repo and may be pushed or synced, so treat it as shared.
 Remove or mask before writing: secrets, tokens, passwords, private keys, connection
 strings, AWS account IDs (→ `<account-id>`), ARNs containing account IDs, internal IPs and
 hostnames, customer names or data, and anything copied from `.env`, kubeconfigs, or
@@ -125,22 +147,23 @@ If an entry can't be useful without sensitive detail, describe it generically an
 user what was omitted.
 
 ### 6. Preview and confirm
-Show the user: the target (project → display label, new or existing), any property and
-registry changes, the session row (`<date> · <display label> · <summary>`), and the full
+Show the user: the target (project → display label, new or existing), any frontmatter and
+registry changes, the session note (`<date> · <display label> · <summary>`), and the full
 entry text. Write only after they confirm. Apply their edits if they request changes.
 
 ### 7. Write
-Order: registry change (if any) → ticket page → session row.
-- Append the entry at the END of the page's "Session log" section (chronological order).
-  Never overwrite or rewrite earlier entries.
-- Update ticket properties: `Last session` = session date, `Status` if it changed, append new
-  PR/doc URLs to `Links`, add the repo ID to `Repos` if missing, and `Branch` if it changed.
-- **Session row: one per ticket per day.** Query Worklog Sessions for this ticket and date.
-  - None: create it (Name = display label, Date, Ticket, Project, Summary).
-  - Exists (a second log the same day): merge into it by combining both summaries into one
-    line (keep it ≤ ~160 chars); don't create a duplicate row.
-- If the work is Done, fill in the page's **Outcome** section (1–3 lines).
-- Reply with the Notion page link and a one-line summary. Nothing more.
+Order: registry change (if any) → ticket note → session note.
+- Append the entry at the END of the note's "Session log" section (chronological order).
+  Never overwrite or rewrite earlier entries. Use Edit, not a full rewrite.
+- Update ticket frontmatter with Edit: `status` if it changed, append new PR/doc URLs to
+  `links`, add the repo ID to `repos` if missing, and `branch` if it changed. Don't touch
+  `last_session`; `upsert-session` keeps it in sync.
+- **Session note: one per ticket per day.** Run `vault.py upsert-session --project <P> --id
+  <ID> --key <key> --date <date> --summary "<summary>"`. It creates the note, or merges
+  the summary into the existing one (a second log the same day; up to 160 characters). It
+  fails if a new summary is over 120 characters: shorten it and rerun.
+- If the work is Done, fill in the note's **Outcome** section (1–3 lines).
+- Reply with the ticket note path and a one-line summary. Nothing more.
 
 ### Backfill mode (missed days)
 Use when the user didn't log one or more past days: `/worklog backfill [<date>|<from>..<to>]`,
@@ -148,8 +171,9 @@ Use when the user didn't log one or more past days: `/worklog backfill [<date>|<
 doesn't cover those days, so rebuild them from local history instead.
 
 1. **Pick the days.** If dates are given, use them. Otherwise take every weekday from the day
-   after the latest `Date` in Worklog Sessions up to yesterday (max 10 weekdays; if more, ask).
-   Drop days that already have session rows, unless the user named them.
+   after the latest session `date` (`vault.py sessions --from 2000-01-01 --to <today>`, take
+   the last one) up to yesterday (max 10 weekdays; if more, ask).
+   Drop days that already have session notes, unless the user named them.
 2. **Collect sources** (read-only). Copy the output to the scratchpad if it's long:
    ```bash
    python3 ~/.claude/skills/worklog/scripts/backfill_sources.py <YYYY-MM-DD> [...] [--roots DIR ...]
@@ -175,23 +199,29 @@ doesn't cover those days, so rebuild them from local history instead.
 6. **Write** as in step 7, with these differences:
    - Place each entry **in date order** within "Session log": insert it before the first
      existing entry with a later date, instead of appending at the end.
-   - Set `Last session` only if the backfilled date is later than the current value.
-   - Session rows use the backfilled date (one per ticket per day; merge if one exists).
-7. Reply with the ticket page link(s) and one line per backfilled day.
+   - `last_session` only moves forward; `upsert-session` handles that, so a backfilled
+     earlier date never lowers it.
+   - Session notes use the backfilled date (one per ticket per day; merged if one exists).
+7. Reply with the ticket note path(s) and one line per backfilled day.
 
 ### Recall mode
-If the user asks what happened on a ticket/project ("what did I decide about X?"), search
-and fetch the relevant pages and answer from them, citing the session dates. Do not write.
+If the user asks what happened on a ticket/project ("what did I decide about X?"), use
+`vault.py find-ticket` / `list-tickets` / `sessions`, or Grep the `Worklog/` folder, then Read
+the relevant notes and answer from them, citing the session dates. Do not write.
 
 ## Edge cases
 - **Multiple tickets in one session:** ask which to log, or log a separate entry and session
-  row to each.
-- **Notion MCP unavailable or unauthenticated:** tell the user to run `/mcp` and authenticate;
-  offer to save the drafted entry to `./.worklog-pending.md` (gitignored) so nothing is lost.
+  note to each.
+- **Vault missing or `vault_path` unset:** `vault.py` says so. Tell the user to run `setup.py`
+  (or `setup.py --set vault_path=...`) and stop; don't write notes anywhere else.
 - **Duplicate tickets found:** list them and ask which one to use; don't guess.
-- **Ticket ID corrected later:** update `Ticket ID`, `Key`, and the `Name` of that ticket's
-  session rows so the weekly summary shows the right label.
+- **Ticket ID corrected later:** in the ticket note update `ticket_id` and `key`, and rename
+  the file to `<new key> - <title>.md` (and its subpage folder, if any). For each of that
+  ticket's session notes rename `<date> <old key>.md` to `<date> <new key>.md`. Then fix every
+  `[[<old file name>]]` link (Grep the vault) to the new name. The label is built from
+  the ticket, so the weekly summary picks up the change by itself. Check the rename with
+  `vault.py sessions` for a day it touches.
 - **Repo moves to another project:** only when the user asks. Remove the repo ID from the old
-  project's `Repos` and add it to the new one; existing tickets stay where they are.
+  project's `repos` and add it to the new one; existing tickets stay where they are.
 - **Repo renamed or remote changed:** if the new ID isn't mapped, ask whether it's the same repo
   as an existing entry and update that line instead of adding a new mapping.

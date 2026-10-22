@@ -1,23 +1,26 @@
 ---
 name: weeklog
-description: Build the user's weekly work summary grouped by day from their Notion work log (Worklog Sessions), formatted as "[PROJ-123] Ticket title" lines ready to copy into time-tracking entries, and save it as a weekly page in Notion. Use this whenever the user runs /weeklog, asks for their week, "what did I work on this week/last week/on Tuesday", a timesheet summary, or wants to fill in or check their time entries.
+description: Build the user's weekly work summary grouped by day from their Obsidian work log (Worklog/Sessions in the Workbench vault), formatted as "[PROJ-123] Ticket title" lines ready to copy into time-tracking entries, and save it as a weekly note in the vault. Use this whenever the user runs /weeklog, asks for their week, "what did I work on this week/last week/on Tuesday", a timesheet summary, or wants to fill in or check their time entries.
 ---
 
 # Weeklog: weekly by-day summary for time tracking
 
-Reads the **Worklog Sessions** rows written by the `worklog` skill and produces a per-day
-list of tickets for one week (Monday–Sunday). Read-only except for the weekly page.
+Reads the session notes written by the `worklog` skill and produces a per-day list of
+tickets for one week (Monday–Sunday). Read-only except for the weekly note.
 
-## Notion structure used
-- **Worklog Sessions** (read): `Name` (display label), `Date`, `Ticket` (relation),
-  `Project` (relation), `Summary`
-- **Worklog Tickets** (read): `Name` (title), `Ticket ID`, `Project`
-- **Worklog Projects** (read): `Name`
-- **Worklog Weeks** (write): `Name` (title, e.g. `2026-W40 · 28 Sep – 4 Oct`),
-  `Week start` (date, the Monday), `Status` (select: Draft / Logged in <time_tool>)
+## Vault structure used
+The vault is the folder in `vault_path`; the contract is `Worklog/_schema.md` in it. Reads and
+the lookup of the week go through `python3 ~/.claude/skills/worklog/scripts/vault.py`
+(JSON on stdout; see the `worklog` skill for the full list).
+- `Sessions/<date> <key>.md` (read): `date`, `ticket`, `project`, `summary`
+- `Tickets/<Project>/...` (read): `title`, `ticket_id`, `project`. `vault.py sessions` joins
+  these in, so `label` is built from the ticket's current fields.
+- `Weeks/<YYYY-Www>.md` (write): frontmatter `title` (e.g. `2026-W40 · 28 Sep – 4 Oct`),
+  `week_start` (the Monday), `status` (`Draft` / `Logged in <time_tool>`); the body is the
+  per-day list.
 
-If Worklog Weeks doesn't exist, offer to create it with this schema (only after the user agrees).
-If Worklog Sessions doesn't exist, the `worklog` skill hasn't been set up yet: say so and stop.
+If `vault.py` says the vault or `Worklog/Sessions` is missing, the `worklog` skill hasn't been
+set up yet (`vault_path`): say so and stop. Create `Weeks/` on first write if it's absent.
 
 ## Config
 Org-specific values are not hard-coded; they live in the untracked
@@ -25,8 +28,9 @@ Org-specific values are not hard-coded; they live in the untracked
 `python3 ~/.claude/skills/worklog/scripts/setup.py --get`. On exit code 3 (no config yet),
 run `python3 ~/.claude/skills/worklog/scripts/setup.py` (it opens dialogs; run it with a long
 timeout, or ask the user in chat and use `setup.py --set key=value`), then continue.
-Used here: `time_tool` (named `<time_tool>` below) and `daily_ticket_id`, `daily_title`,
-`daily_project` for the recurring weekday entry (skip that entry if `daily_ticket_id` is empty).
+Used here: `time_tool` (named `<time_tool>` below), `vault_path`, and `daily_ticket_id`,
+`daily_title`, `daily_project` for the recurring weekday entry (skip that entry if
+`daily_ticket_id` is empty).
 
 ## Workflow
 
@@ -55,15 +59,19 @@ PY
 ```
 
 ### 2. Fetch sessions
-Query Worklog Sessions where `Date` is between Monday and Sunday (inclusive). For each row,
-build the display label from the **related ticket's current** `Ticket ID` and `Name`
-(so renamed/corrected tickets show correctly); fall back to the row's `Name`:
+Run `vault.py sessions --from <Monday> --to <Sunday>`. Each row has `date`, `label`, `project`,
+`ticket_id`, `title` and `summary`; the label is already built from the **related ticket's
+current** `ticket_id` and `title` (so renamed/corrected tickets show correctly):
 - With a Ticket ID: `[PROJ-123] <ticket title>`
 - Without one: `<ticket title>`
 
+Rows come back sorted by date, project, ticket number, title. A row with `ticket_found:
+false` points at a ticket note that no longer exists: list it with the fallback label and
+flag it.
+
 **Recurring entries:** if configured, add `[<daily_ticket_id>] <daily_title>` (project
-`<daily_project>`) to every weekday Mon–Fri, including days not yet worked. It isn't logged in
-Worklog Sessions, and it never goes on Sat/Sun. If a session row for that ticket exists on a
+`<daily_project>`) to every weekday Mon–Fri, including days not yet worked. It isn't logged as
+a session note, and it never goes on Sat/Sun. If a session note for that ticket exists on a
 day, don't list it twice.
 
 ### 3. Format
@@ -98,21 +106,25 @@ Wed 30 Sep
 Each label line must match exactly: `[<TICKET-ID>] <ticket title>`, with nothing else on it,
 so it can be pasted as-is.
 
-Summaries aren't in the copy block, but they go on the Notion page. Re-check them for
+Summaries aren't in the copy block, but they go on the weekly note. Re-check them for
 anything sensitive (secrets, account IDs, internal hostnames, customer data), mask it, and
-tell the user. Flag rows with an empty `Summary` ("no summary logged") instead of inventing one.
+tell the user. Flag rows with an empty `summary` ("no summary logged") instead of inventing one.
 
-### 4. Save the weekly page
-Look up Worklog Weeks by `Week start` = Monday.
-- **Not found:** create it (Name, Week start, Status = Draft) with this body: one heading per
-  day, the label lines (including the recurring entry) as bullets, and each session's summary as nested
-  text under its bullet. The recurring entry has no summary.
-- **Found, Status = Draft:** replace the body with the fresh summary (it's derived data).
-- **Found, Status = Logged in <time_tool>:** if the new summary differs, show what changed and
-  ask before overwriting, since the user may have already submitted those entries.
+### 4. Save the weekly note
+`vault.py find-week --week <YYYY-Www>` returns `path`, `exists`, `status`, and the `title` and
+`week_start` to use for a new note.
+- **Not found:** create `Weeks/<YYYY-Www>.md` with Write. Frontmatter: `type: week`, `title`
+  (double-quoted), `week_start`, `status: Draft`. Body: a blank line, then one `## Mon 5 Oct`
+  heading per day, the label lines (including the recurring entry) as `- ` bullets, and each
+  session's summary as an indented line under its bullet. The recurring entry has no summary.
+- **Found, status = Draft:** replace the body with the fresh summary (it's derived data) and
+  keep the frontmatter.
+- **Found, status = Logged in <time_tool>:** if the new summary differs, show what changed and
+  ask before overwriting, since the user may have already submitted those entries. Existing
+  weeks may hold hand-written lines (e.g. `Holiday`) that aren't sessions: keep them.
 
 ### 5. Reply
-Print the formatted week in a code block (easy to copy), then the Notion page link.
+Print the formatted week in a code block (easy to copy), then the weekly note path.
 Mention weekdays with no logged sessions (only the recurring entry) and rows missing summaries, if any.
 Nothing more.
 
@@ -121,15 +133,16 @@ happened: run `python3 ~/.claude/skills/worklog/scripts/backfill_sources.py <gap
 (read-only), and for each gap day say whether commits or transcripts were found
 (e.g. "Tue 29 Sep: 3 commits on proj-123-…, no session logged"). If anything was found, offer:
 *"Backfill these days with /worklog?"* On yes, run the `worklog` skill's backfill mode for
-those dates, then rebuild this week (steps 2–4) so the page and copy block include them.
-Days with nothing found show only the recurring entry. Today and future days are never gaps.
+those dates, then rebuild this week (steps 2–4) so the note and copy block include them.
+Days with nothing found show only the recurring entry. A day holding a hand-written line
+(e.g. `Holiday`) in an existing week note isn't a gap. Today and future days are never gaps.
 
-When the user says they've entered the week in <time_tool>, set the page's Status to
-"Logged in <time_tool>".
+When the user says they've entered the week in <time_tool>, set the note's `status` to
+"Logged in <time_tool>" (Edit the frontmatter line).
 
 ## Edge cases
 - **Asked about one day** ("what did I do Tuesday?"): answer for that day only and don't
-  save a weekly page unless asked.
-- **Sessions logged late:** rows carry the work date, not the log date, so they land on
+  save a weekly note unless asked.
+- **Sessions logged late:** notes carry the work date, not the log date, so they land on
   the correct day automatically.
-- **Notion MCP unavailable:** tell the user to run `/mcp` and authenticate.
+- **Vault unavailable:** tell the user to run `setup.py` and set `vault_path`.

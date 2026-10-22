@@ -57,7 +57,7 @@ newer DevOps topics, explain the reasoning and trade-offs.
 
 ## Work log
 - When a task reaches a natural completion point (tests pass, PR opened, bug root-caused,
-  decision made), ask once: "Log this to Notion?" If yes, use the worklog skill.
+  decision made), ask once: "Log this to the worklog?" If yes, use the worklog skill.
 - Don't offer for trivial tasks (typos, quick questions), and at most once per ticket per session.
 - If I say "don't log this repo", stop offering for the rest of the session.
 
