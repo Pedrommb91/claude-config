@@ -4,6 +4,10 @@
     "commit": "",
     "pr": ""
   },
+  "statusLine": {
+    "type": "command",
+    "command": "python3 ~/.claude/skills/paparazzi/hooks/statusline.py"
+  },
   "permissions": {
     "allow": [
       "Bash(go build:*)",
