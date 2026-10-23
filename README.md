@@ -36,17 +36,6 @@ The following skills are not mine; they come from
 All credit for them goes to the original author; check the upstream repo for
 the current versions and license terms.
 
-## Paparazzi setup (per machine)
-
-The `paparazzi` skill (live agent map, `/paparazzi`) lives in its own repo, [Pedrommb91/paparazzi](https://github.com/Pedrommb91/paparazzi).
-`skills/paparazzi` is a git-ignored symlink to a local checkout. To clone it (or update it) and link it:
-
-```sh
-~/.claude/scripts/install-paparazzi.sh             # checkout defaults to ~/Documents/personal/paparazzi
-PAPARAZZI_DIR=~/src/paparazzi ~/.claude/scripts/install-paparazzi.sh
-~/.claude/scripts/install-paparazzi.sh uninstall   # removes the link, keeps the checkout
-```
-
 ## Worklog setup (per machine)
 
 The `worklog`, `weeklog` and `start-ticket` skills need a few organisation-specific values
