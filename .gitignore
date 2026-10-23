@@ -26,6 +26,3 @@ worklog.config.json
 __pycache__/
 *.pyc
 .DS_Store
-
-# paparazzi lives in Pedrommb91/paparazzi, symlinked locally (scripts/install-paparazzi.sh)
-skills/paparazzi
