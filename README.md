@@ -24,16 +24,20 @@ git -C ~/.claude config core.hooksPath .githooks
 
 ## Credits
 
-The following skills are not mine; they come from
-[mattpocock/skills](https://github.com/mattpocock/skills) by Matt Pocock:
+The planning skills are adapted from
+[mattpocock/skills](https://github.com/mattpocock/skills) by Matt Pocock, reworked to keep
+plans, decisions and glossary in an Obsidian vault (or any notes folder) instead of the repo:
 
-- `grilling`
-- `triage`
-- `setup-matt-pocock-skills`
-- `to-spec`
-- `to-tickets`
+- `triage` (from `triage`)
+- `setup` (from `setup-matt-pocock-skills`)
+- `spec` (from `to-spec`)
+- `issues` (from `to-tickets`, merged with `planning-and-task-breakdown`)
+- `brainstorm` (from `grilling`, merged with `interview-me`)
 
-All credit for them goes to the original author; check the upstream repo for
+`planning-and-task-breakdown` and `interview-me` come from
+[addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) by Addy Osmani.
+
+All credit for the originals goes to their authors; check the upstream repos for
 the current versions and license terms.
 
 ## Worklog setup (per machine)
