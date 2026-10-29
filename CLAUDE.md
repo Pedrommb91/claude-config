@@ -75,5 +75,6 @@ newer DevOps topics, explain the reasoning and trade-offs.
 - Keep tool output small: `gh run view --log-failed | tail -n 80`, `go test -run <name>`,
   `| tail`/`| head` on long output. Don't re-poll CI across turns; use one
   `gh pr checks --watch` (or a background Monitor).
+- Never ScheduleWakeup or poll for a background agent or command; the harness notifies on completion.
 - For mechanical, pattern-following work (label maps, i18n wiring, renames), suggest
   switching to Sonnet via `/model`; keep Opus for specs, planning, and debugging.
