@@ -62,10 +62,10 @@ newer DevOps topics, explain the reasoning and trade-offs.
 - If I say "don't log this repo", stop offering for the rest of the session.
 
 ## Context gathering
-- When you need context (locating code, tracing a flow, reading several files, repo-wide grep),
-  delegate to the `context-scout` subagent instead of reading files in the main session.
-- Read directly only when the target file and line range are already known, or before editing.
-- Never use `general-purpose` for lookups or searches; use `context-scout`. Spawn a subagent
+- Read directly when the target file and line range are already known, or before editing.
+- For broad sweeps (locating code across many files, tracing a flow, repo-wide grep), delegate
+  to the built-in `Explore` agent instead of reading files in the main session.
+- Never use `general-purpose` for lookups or searches; use `Explore`. Spawn a subagent
   only when it saves more context than it costs, and give it a narrow, explicit brief.
 
 ## Usage / context hygiene

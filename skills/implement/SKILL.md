@@ -55,7 +55,7 @@ GitHub / GitLab: assign the issue to the user (`gh issue edit <n> --add-assignee
 
 ### 3. Explore
 
-Read the notes root's `Glossary.md` and the `Decisions/` that touch the area (skip silently if absent). Then find the code the issue touches. For anything beyond a couple of known files, delegate to the `context-scout` agent with a narrow brief (the issue's behaviour and the components it names), and keep the summary rather than the file dumps.
+Read the notes root's `Glossary.md` and the `Decisions/` that touch the area (skip silently if absent). Then find the code the issue touches. For anything beyond a couple of known files, delegate to the built-in `Explore` agent with a narrow brief (the issue's behaviour and the components it names), and keep the summary rather than the file dumps.
 
 Find the repo's focused-test, build and lint commands. The issue's `## Verification` names them; otherwise take them from the repo's CLAUDE.md / Makefile / CI workflow.
 
