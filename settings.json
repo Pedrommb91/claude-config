@@ -68,7 +68,7 @@
       "Bash(git commit:*)"
     ]
   },
-  "model": "sonnet",
+  "model": "opus",
   "hooks": {
     "PreToolUse": [
       {

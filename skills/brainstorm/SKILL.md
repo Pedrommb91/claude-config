@@ -8,9 +8,9 @@ description: "Interview the user until you understand what they actually want, t
 What people ask for and what they actually want are different things. The cheapest moment to find that gap is before any spec, plan or code exists. This skill closes it in two phases, then stops:
 
 1. **Intent**: what does the user actually want? One question at a time until you can predict their answers.
-2. **Design**: which decisions does that want imply? Grilled in rounds until nothing is silently assumed.
+2. **Design**: which decisions does that want imply? Brainstorm in rounds until nothing is silently assumed.
 
-**Design-only mode** skips phase 1. Use it when called from `/triage` (the issue already carries the intent), or when the user says the intent is settled ("I know what I want, grill the design"). Say which mode you're in at the start.
+**Design-only mode** skips phase 1. Use it when called from `/triage` (the issue already carries the intent), or when the user says the intent is settled ("I know what I want, brainstorm the design"). Say which mode you're in at the start.
 
 **When NOT to use:** unambiguous, self-contained asks (rename, typo); pure information requests; mechanical work; when the user explicitly wants speed over verification.
 
