@@ -14,7 +14,7 @@ The user has asked for a **retrospective**. You are suggesting improvements to t
    - Transcripts: `~/.claude/projects/<cwd with / replaced by ->/<session-id>.jsonl`. Subagent transcripts sit in `<session-id>/subagents/`, large tool outputs in `<session-id>/tool-results/`.
    - Pick by recency (`ls -t`) or by the `ai-title` / `last-prompt` records.
    - Read the transcript through `jq`, never `cat`. Tool calls are `tool_use` blocks in `assistant` messages; results are `tool_result` blocks in `user` messages; `.message.usage` carries token counts. Start with a skeleton (tool name + first ~80 chars of input, result length), then open only the moments that matter.
-   - For a long past session, delegate the read to `context-scout` with a narrow brief: the file path, the categories below, and "return moments as `turn index: what happened`".
+   - For a long past session, delegate the read to the built-in `Explore` agent with a narrow brief: the file path, the categories below, and "return moments as `turn index: what happened`".
 
 2. **Read the repo's steering and guardrails** before judging anything: the repo `CLAUDE.md` or `AGENTS.md`, the global `~/.claude/CLAUDE.md`, the memory index, `.claude/settings.json` (permissions, hooks), `CODING_STANDARDS.md` if present, `.pre-commit-config.yaml`, `Makefile`/`Taskfile.yml`, `.golangci.yml`/`pyproject.toml`, and `.github/workflows/`. A check that already exists but is unwired or silently broken is the finding, not a reinvention.
 
@@ -42,7 +42,7 @@ The user has asked for a **retrospective**. You are suggesting improvements to t
 
 - **No-ops**: instructions that don't change behaviour versus the model's default. Delete the whole sentence. _Use when_ the steering files are large and unwieldy.
 
-- **Tool economy**: were there expensive tool calls (whole-file reads, unpaged `gh run view --log`, `kubectl get -o yaml` on everything, full test suites when one test would do, exploration in the main session that `context-scout` should have done)? Is any CLI or MCP particularly token-inefficient? _Use when_ the agent made an expensive tool call.
+- **Tool economy**: were there expensive tool calls (whole-file reads, unpaged `gh run view --log`, `kubectl get -o yaml` on everything, full test suites when one test would do, exploration in the main session that `Explore` should have done)? Is any CLI or MCP particularly token-inefficient? _Use when_ the agent made an expensive tool call.
 
 - **Information access**: was a crucial piece of information out of reach? Candidates: a read-only AWS profile, a read-only kube context, `gh` access to CI logs, teeing local server/test output to a file, an MCP that needs auth (Atlassian/Jira). Grant read-only only; anything mutating stays behind a confirmation. _Use when_ the agent guessed or asked for something it could have looked up.
 

@@ -52,7 +52,7 @@ If the repo has an `## Agent skills` block (see the `setup` skill's [notes.md](.
 
 ### 2. Explore
 
-Delegate the walk to the `context-scout` agent so the file reads stay out of the main session. Brief it narrowly: the hot-spot paths, the vocabulary and principles above, the friction questions below, the paths it must not open (secrets, state, kubeconfigs), and "return candidates as `files: problem` with `file:line` references, not file contents". For a large repo, split the hot spots across two or three scouts in one message.
+Walk the code in the main session, not a subagent: judging friction needs the code in front of you, and a summary loses it. Keep it lean: start from the hot-spot paths, read the interfaces and call sites before whole files, page large files with line ranges, and don't open secrets, state files or kubeconfigs. Note candidates as `files: problem` with `file:line` references as you go.
 
 Don't follow rigid heuristics; note where understanding hurts:
 
@@ -117,7 +117,7 @@ Follow `brainstorm`'s rules: rounds with recommended answers, and nothing saved 
 
 ## Red flags
 
-- Exploring in the main session instead of delegating to `context-scout`
+- Handing the walk to a subagent instead of reading the code in the main session
 - Scanning the whole repo when the history shows clear hot spots
 - A candidate that fails the deletion test, or one justified with "cleaner" or "easier to maintain" instead of locality and leverage
 - Proposing interfaces in the report, before the user picks a candidate
