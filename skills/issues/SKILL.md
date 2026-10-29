@@ -94,7 +94,7 @@ Then:
 - Update the spec issue's `## Issues` section with the ordered list of children (edit the body; don't close or otherwise modify the spec issue).
 - Write the plan note `<notes root>/Plans/<slug>.md` from the template below.
 
-Work the **frontier**: any issue whose blockers are all done. For a purely linear chain that's top to bottom.
+Work the **frontier**: any issue whose blockers are all done. For a purely linear chain that's top to bottom. Hand off with `/implement <first frontier issue>`, one issue per session; don't start it in the same turn.
 
 <issue-template>
 

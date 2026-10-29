@@ -79,7 +79,7 @@ Let them edit.
 ```markdown
 ## Agent skills
 
-Read by /brainstorm, /spec, /issues and /triage.
+Read by /brainstorm, /spec, /issues, /triage and /implement.
 
 - **Tracker:** GitHub (`owner/repo`)
 - **Notes root:** `~/Documents/Workbench/<Project>` (Obsidian vault `~/Documents/Workbench`)

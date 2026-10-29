@@ -33,6 +33,7 @@ plans, decisions and glossary in an Obsidian vault (or any notes folder) instead
 - `spec` (from `to-spec`)
 - `issues` (from `to-tickets`, merged with `planning-and-task-breakdown`)
 - `brainstorm` (from `grilling`, merged with `interview-me`)
+- `implement` (from `implement`, one issue per run, with Jira tickets via `start-ticket`)
 
 `planning-and-task-breakdown` and `interview-me` come from
 [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) by Addy Osmani.
