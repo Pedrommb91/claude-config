@@ -23,7 +23,7 @@ The issue comes from one of two places:
 
 **Tracker issue.**
 
-- With a ref: fetch it with body and comments. If it carries `spec:<slug>`, fetch the parent spec issue too, and read `<notes root>/Plans/<slug>.md` if it exists.
+- With a ref: fetch it with the read command in `../setup/trackers/<tracker>.md` (body and comments in one call). If it carries `spec:<slug>`, fetch the parent spec issue too, and read `<notes root>/Plans/<slug>.md` if it exists.
 - Without a ref: if the current branch or conversation points to a spec, list its **frontier** (tracker doc) and let the user pick. Otherwise ask for a ref.
 
 Refuse, and say why, when:
