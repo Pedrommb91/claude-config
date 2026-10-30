@@ -5,7 +5,7 @@ Issues and specs live as GitHub issues. Use the `gh` CLI for all operations; it 
 ## Conventions
 
 - **Create an issue**: `gh issue create --title "..." --body-file - --label a --label b <<'EOF' ... EOF`. Use a heredoc for multi-line bodies.
-- **Read an issue**: `gh issue view <n> --json number,title,body,labels,comments`.
+- **Read an issue** (body and comments in one call; plain `gh issue view --comments` drops the body): `gh issue view <n> --json number,title,state,labels,assignees,body,comments,blockedBy`. `blockedBy` lists each blocker with its state.
 - **List issues**: `gh issue list --state open --json number,title,labels --jq '[.[] | {number, title, labels: [.labels[].name]}]'` with `--label` / `--state` filters. Add `body,comments` only when you need them.
 - **Comment**: `gh issue comment <n> --body "..."`
 - **Apply / remove labels**: `gh issue edit <n> --add-label "..."` / `--remove-label "..."`
