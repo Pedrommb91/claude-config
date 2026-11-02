@@ -81,6 +81,7 @@ Run the repo's full checks, keeping output small (`| tail`):
 - Go: `go build ./...`, `go vet ./...`, `go test ./...` (`-race` if the change touched goroutines)
 - Python: `ruff check`, `pytest`
 - Terraform: `terraform fmt -check`, `terraform validate`
+- If the diff touches UI, run the repo's snapshot/baseline update (e.g. `scripts/visual-update`) and commit the changed baselines before step 6. Read the nearest `AGENTS.md` of every directory you edit, even when editing via shell.
 - Plus anything the issue's `## Verification` lists (including the manual check: do it, or hand it to the user if it needs access you don't have)
 
 If a check fails and the fix isn't obvious, stop and explain. Don't guess.
