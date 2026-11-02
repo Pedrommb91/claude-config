@@ -58,6 +58,8 @@ Give each issue its **blocking edges**: the other issues that must complete befo
 | M | One feature slice | Registration flow |
 | L | Multi-component feature | Search with filtering and pagination |
 
+For each UI state in the acceptance criteria, name the API response field or code that drives it, and add an API sub-issue if none exists.
+
 **L or bigger → split it.** Also split when it would take more than one focused session, when you can't state its acceptance criteria in 3 or fewer bullets, when it touches two independent subsystems, or when its title has an "and" in it. Agents do best on S and M.
 
 **Wide refactors are the exception to vertical slicing.** A **wide refactor** is one mechanical change (rename a column, retype a shared symbol) whose **blast radius** fans across the whole codebase, so a single edit breaks thousands of call sites at once and no vertical slice can land green. Don't force it into a tracer bullet; sequence it as **expand–contract**. First expand: add the new form beside the old so nothing breaks. Then migrate the call sites over in batches sized by blast radius (per package, per directory), each batch its own issue blocked by the expand, keeping CI green batch to batch because the old form still exists. Finally contract: delete the old form once no caller remains, in an issue blocked by every migrate batch. When even the batches can't stay green alone, keep the sequence but let them share an integration branch that all block a final integrate-and-verify issue; green is promised only there.

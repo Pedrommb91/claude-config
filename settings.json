@@ -32,7 +32,9 @@
       "Bash(python3 ~/.claude/skills/worklog/scripts/vault.py:*)",
       "Read(/Users/pedrobarreiro/Documents/Workbench/**)",
       "Edit(/Users/pedrobarreiro/Documents/Workbench/**)",
-      "Write(/Users/pedrobarreiro/Documents/Workbench/**)"
+      "Write(/Users/pedrobarreiro/Documents/Workbench/**)",
+      "Read(**/.env.example)",
+      "Edit(**/.env.example)"
     ],
     "deny": [
       "Bash(terraform destroy:*)",
@@ -42,7 +44,6 @@
       "Bash(git push --force:*)",
       "Bash(git push -f:*)",
       "Read(**/.env)",
-      "Read(**/.env.*)",
       "Read(~/.aws/**)",
       "Read(~/.kube/**)",
       "Read(**/*.tfstate)",
@@ -68,7 +69,7 @@
       "Bash(git commit:*)"
     ]
   },
-  "model": "opus",
+  "model": "sonnet",
   "hooks": {
     "PreToolUse": [
       {
