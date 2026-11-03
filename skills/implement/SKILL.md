@@ -1,6 +1,6 @@
 ---
 name: implement
-description: "Implement one issue from /issues (or a Jira ticket started with /start-ticket) end to end: check it's on the frontier, branch, build it test-first with /tdd at the spec's seams, run the full checks, commit, run /review and fix its Critical/Required findings, then open a PR that closes the issue. One issue per run; stops at plan checkpoints for human review."
+description: "Implement one issue from /issues (or a Jira ticket started with /start-ticket) end to end: check it's on the frontier, branch, build it test-first with /tdd at the spec's seams, run the full checks, run /simplify, commit, run /review and fix its Critical/Required findings, then open a PR that closes the issue. One issue per run; stops at plan checkpoints for human review."
 disable-model-invocation: true
 ---
 
@@ -86,6 +86,11 @@ Run the repo's full checks, keeping output small (`| tail`):
 
 If a check fails and the fix isn't obvious, stop and explain. Don't guess.
 
+**Simplify.** Once the checks are green, invoke `/simplify` on the uncommitted diff, before committing, so `/review` sees the cleaned-up code. It edits files, so:
+
+- Skim what it changed. Revert anything outside the issue's scope (unrelated renames, reformatting, drive-by refactors); the diff stays small and on-contract.
+- Re-run the checks above after it finishes. If it broke a test and the fix isn't obvious, revert that change.
+
 ### 6. Commit
 
 Commit to the issue branch in small, reviewable commits that follow the repo's commit style. Each one references the issue: `(#42)` for GitHub / GitLab, `PROJ-123:` or the repo's Jira convention. Don't push yet.
@@ -132,6 +137,7 @@ Finish with the global work-log offer ("Log this to the worklog?"). For Jira tic
 
 - [ ] Every acceptance criterion has a test at a confirmed seam, and they all pass
 - [ ] The full checks pass, and the results were reported
+- [ ] `/simplify` ran, out-of-scope edits were reverted, and the checks were re-run
 - [ ] `/review` ran, and its Critical/Required findings are fixed
 - [ ] Work is committed on the issue branch, referencing the issue
 - [ ] PR opened with `Closes #n` (or local `Status: done`, or Jira reminder), after the user agreed
