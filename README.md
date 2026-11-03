@@ -39,6 +39,14 @@ plans, decisions and glossary in an Obsidian vault (or any notes folder) instead
 `planning-and-task-breakdown` and `interview-me` come from
 [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) by Addy Osmani.
 
+`ub-mode` is from [unclebob/ub-mode](https://github.com/unclebob/ub-mode) by Robert C. Martin
+(loosely based on `poteto-mode`), with one local change: the final push rule targets a branch/PR
+instead of main. It pairs with deterministic tools cloned outside this repo (see
+`~/Documents/tools/uncle-bob/`): [crapper](https://github.com/unclebob/crapper) (CRAP < 10),
+[dryer](https://github.com/unclebob/dryer) (similarity ≥ 0.8),
+[mutator](https://github.com/unclebob/mutator) and
+[uml-viewer](https://github.com/unclebob/uml-viewer).
+
 All credit for the originals goes to their authors; check the upstream repos for
 the current versions and license terms.
 
