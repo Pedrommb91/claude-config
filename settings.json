@@ -34,7 +34,9 @@
       "Edit(/Users/pedrobarreiro/Documents/Workbench/**)",
       "Write(/Users/pedrobarreiro/Documents/Workbench/**)",
       "Read(**/.env.example)",
-      "Edit(**/.env.example)"
+      "Edit(**/.env.example)",
+      "Bash(scripts/ub *)",
+      "Bash(scripts/q scripts/ub *)"
     ],
     "deny": [
       "Bash(terraform destroy:*)",
