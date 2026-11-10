@@ -86,7 +86,7 @@ Run the repo's full checks, keeping output small (`| tail`):
 
 If a check fails and the fix isn't obvious, stop and explain. Don't guess.
 
-**Simplify.** Once the checks are green, invoke `/simplify` on the uncommitted diff, before committing, so `/review` sees the cleaned-up code. It edits files, so:
+**Simplify.** Skip it for a diff under ~30 changed lines, and say so in the report. Otherwise, once the checks are green, invoke `/simplify` on the uncommitted diff, before committing, so `/review` sees the cleaned-up code. It edits files, so:
 
 - Skim what it changed. Revert anything outside the issue's scope (unrelated renames, reformatting, drive-by refactors); the diff stays small and on-contract.
 - Re-run the checks above after it finishes. If it broke a test and the fix isn't obvious, revert that change.
